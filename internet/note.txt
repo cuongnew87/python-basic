@@ -1,0 +1,66 @@
+// show ttl and how to find google.com
+nslookup -type=a -debug google.com 8.8.8.8
+
+C:\Users\Acer>nslookup -type=a -debug google.com 8.8.8.8
+from dns.google -> google.com.lan (find local) -> google.com (Non-authoritative answer is optional)
+------------
+Got answer:
+    HEADER:
+        opcode = QUERY, id = 1, rcode = NOERROR
+        header flags:  response, want recursion, recursion avail.
+        questions = 1,  answers = 1,  authority records = 0,  additional = 0
+
+    QUESTIONS:
+        8.8.8.8.in-addr.arpa, type = PTR, class = IN
+    ANSWERS:
+    ->  8.8.8.8.in-addr.arpa
+        name = dns.google
+        ttl = 13371 (3 hours 42 mins 51 secs)
+
+------------
+Server:  dns.google
+Address:  8.8.8.8
+
+------------
+Got answer:
+    HEADER:
+        opcode = QUERY, id = 2, rcode = NXDOMAIN
+        header flags:  response, want recursion, recursion avail.
+        questions = 1,  answers = 0,  authority records = 1,  additional = 0
+
+    QUESTIONS:
+        google.com.lan, type = A, class = IN
+    AUTHORITY RECORDS:
+    ->  (root)
+        ttl = 86398 (23 hours 59 mins 58 secs)
+        primary name server = a.root-servers.net
+        responsible mail addr = nstld.verisign-grs.com
+        serial  = 2026031900
+        refresh = 1800 (30 mins)
+        retry   = 900 (15 mins)
+        expire  = 604800 (7 days)
+        default TTL = 86400 (1 day)
+
+------------
+------------
+Got answer:
+    HEADER:
+        opcode = QUERY, id = 3, rcode = NOERROR
+        header flags:  response, want recursion, recursion avail.
+        questions = 1,  answers = 1,  authority records = 0,  additional = 0
+
+    QUESTIONS:
+        google.com, type = A, class = IN
+    ANSWERS:
+    ->  google.com
+        internet address = 142.250.199.206
+        ttl = 42 (42 secs)
+
+------------
+Non-authoritative answer:
+Name:    google.com
+Address:  142.250.199.206
+
+
+// display all dns
+ipconfig /displaydns
