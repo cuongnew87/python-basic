@@ -1,2 +1,6 @@
 1. Run python:
 print("hello")
+
+gui: normal browser
+automation: auto browser
+text-based: only-text
