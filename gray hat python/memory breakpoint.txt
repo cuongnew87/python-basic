@@ -1,0 +1,21 @@
+Mục 2.4.3 Memory Breakpoints trong Gray Hat Python giới thiệu một kỹ thuật "trung gian" nằm giữa Soft và Hard Breakpoints. 
+Nó cho phép bạn theo dõi một vùng nhớ lớn (không chỉ giới hạn ở 4 địa chỉ như Hard Breakpoint) 
+mà không cần sửa đổi mã máy (như Soft Breakpoint).
+
+Cơ chế này dựa trên một tính năng của hệ điều hành Windows gọi là Page Permissions (Quyền hạn của trang bộ nhớ).
+
+1. Cơ chế hoạt động: Guard Pages
+Hệ điều hành quản lý bộ nhớ theo từng khối gọi là Pages (thường là 4096 bytes). 
+Mỗi trang có các quyền: Read (Đọc), Write (Ghi), Execute (Thực thi).
+
+Để đặt một Memory Breakpoint, Debugger thực hiện các bước sau:
+
+Đánh dấu: Debugger thay đổi thuộc tính của trang bộ nhớ chứa địa chỉ mục tiêu thành PAGE_GUARD (Trang bảo vệ).
+
+Kích hoạt: Khi chương trình (Debuggee) cố gắng truy cập vào bất kỳ địa chỉ nào trong trang đó, 
+CPU sẽ không thực hiện lệnh mà ném ra một ngoại lệ: STATUS_GUARD_PAGE_VIOLATION.
+
+Xử lý: Debugger nhận được sự kiện này, dừng chương trình lại và cho phép bạn kiểm tra dữ liệu.
+
+Khôi phục: Sau khi ngoại lệ xảy ra, thuộc tính PAGE_GUARD tự động bị gỡ bỏ. 
+Debugger phải đặt lại nó nếu muốn tiếp tục theo dõi.

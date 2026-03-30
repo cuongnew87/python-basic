@@ -1,0 +1,28 @@
+1. Bản chất của Soft Breakpoint: Mã máy 0xCC
+Trong kiến trúc x86, có một lệnh đặc biệt gọi là INT 3 (Interrupt 3). Mã máy (opcode) của lệnh này chỉ vỏn vẹn 1 byte: 0xCC.
+
+Khi CPU thực thi đến byte 0xCC, nó sẽ:
+
+Tạm dừng chương trình.
+
+Gửi một tín hiệu ngoại lệ (EXCEPTION_BREAKPOINT) tới hệ điều hành.
+
+Hệ điều hành sau đó chuyển sự kiện này tới Debugger của bạn.
+
+2. Cách Debugger đặt một Soft Breakpoint (Quy trình 4 bước)
+Giả sử bạn muốn dừng chương trình tại địa chỉ 0x401000:
+
+Lưu lại: Debugger đọc và lưu trữ byte dữ liệu gốc tại địa chỉ 0x401000 vào một danh sách tạm thời.
+
+Ghi đè: Debugger dùng hàm WriteProcessMemory (từ kernel32.dll) để ghi đè byte gốc đó bằng byte 0xCC.
+
+Đợi: Khi chương trình chạy đến địa chỉ này, nó gặp 0xCC và khựng lại. Debugger nhận được sự kiện Debug Event.
+
+Phục hồi: Khi bạn muốn chương trình chạy tiếp, Debugger phải ghi đè trả lại byte gốc ban đầu vào địa chỉ đó, nếu không chương trình sẽ bị hỏng lệnh.
+
+3. Tại sao gọi là "Soft" (Phần mềm)?
+Ưu điểm: Bạn có thể đặt bao nhiêu tùy thích (hàng ngàn cái cũng được) vì nó chỉ là việc ghi đè bộ nhớ RAM.
+
+Nhược điểm: Nó làm thay đổi mã máy của chương trình. Nếu chương trình có cơ chế tự kiểm tra (Anti-debugging), nó sẽ phát hiện ra mã máy bị thay đổi và tự thoát.
+
+Lưu ý quan trọng: Khi CPU dừng lại ở 0xCC, thanh ghi EIP (Instruction Pointer) sẽ trỏ vào địa chỉ ngay sau byte 0xCC đó. Để chạy tiếp lệnh gốc, Debugger của bạn phải thực hiện một thao tác "lùi" EIP lại 1 byte.

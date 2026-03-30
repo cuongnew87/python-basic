@@ -1,0 +1,42 @@
+Trong ngữ cảnh của Gray Hat Python và lập trình hệ thống, 
+Stack (ngăn xếp) là một vùng nhớ cực kỳ quan trọng. Nếu không có Stack, 
+máy tính sẽ không thể thực hiện các hàm (functions) một cách tuần tự được.
+
+Dưới đây là cách hiểu đơn giản nhất về Stack:
+
+1. Cơ chế LIFO (Vào sau, Ra trước)
+Hãy tưởng tượng Stack giống như một chồng đĩa.
+
+Bạn đặt cái đĩa thứ nhất xuống, sau đó đặt cái đĩa thứ hai lên trên.
+
+Khi muốn lấy đĩa ra, bạn phải lấy cái đĩa thứ hai (cái vừa đặt vào sau cùng) trước khi có thể lấy cái thứ nhất.
+
+Trong lập trình, cơ chế này gọi là LIFO (Last-In, First-Out).
+
+2. Stack dùng để làm gì trong CPU?
+Khi một chương trình đang chạy và gặp một lệnh gọi hàm (ví dụ: printf), 
+CPU sẽ sử dụng Stack để "ghi nhớ" trạng thái hiện tại trước khi nhảy sang hàm mới. Cụ thể, Stack lưu trữ:
+
+Tham số của hàm (Arguments): Các giá trị bạn truyền vào hàm (như message_string trong ví dụ trước).
+
+Địa chỉ trả về (Return Address): Sau khi hàm chạy xong, CPU nhìn vào Stack để biết mình cần quay lại dòng code 
+nào để chạy tiếp.
+
+Biến cục bộ (Local Variables): Các biến bạn khai báo bên trong hàm.
+
+3. Hai thanh ghi "quản lý" Stack
+Trong mục 2.1 của sách, bạn sẽ thấy hai thanh ghi luôn đi đôi với nhau để quản lý vùng nhớ này:
+
+ESP (Stack Pointer): Đây là "ngón tay" trỏ vào cái đĩa trên cùng của chồng đĩa. Khi bạn push một giá trị vào, 
+ESP sẽ di chuyển để trỏ vào giá trị mới đó.
+
+EBP (Base Pointer): Đây là "mỏ neo" nằm ở đáy của mỗi hàm. Nó giúp CPU xác định vị trí các biến và tham số của hàm 
+đó mà không bị lạc lối khi Stack thay đổi.
+
+4. Hai thao tác cơ bản
+PUSH: Đưa một giá trị vào đỉnh Stack. (ESP giảm đi 4 bytes trên hệ thống 32-bit).
+
+POP: Lấy giá trị từ đỉnh Stack ra. (ESP tăng thêm 4 bytes).
+
+Sự thật thú vị: Trong kiến trúc x86, Stack phát triển ngược. Nghĩa là khi bạn thêm dữ liệu vào, 
+địa chỉ bộ nhớ thực tế lại giảm dần.

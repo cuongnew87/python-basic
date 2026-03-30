@@ -1,0 +1,22 @@
+Tiếp nối phần Soft Breakpoint, Hard Breakpoint (hay còn gọi là Hardware Breakpoint) là một cơ chế mạnh mẽ hơn, 
+tinh vi hơn và "sạch sẽ" hơn rất nhiều. Thay vì đi sửa đổi mã máy của chương trình, nó sử dụng chính các thanh ghi vật lý bên trong CPU để giám sát bộ nhớ.
+
+Dưới đây là những điểm cốt lõi về Hard Breakpoint mà chương 2 của Gray Hat Python muốn bạn nắm vững:
+
+1. Cơ chế: Các thanh ghi Debug (DR0 - DR7)
+CPU dòng x86 có 8 thanh ghi đặc biệt dành riêng cho việc debug, được ký hiệu từ DR0 đến DR7.
+
+DR0, DR1, DR2, DR3: Dùng để lưu trữ địa chỉ mà bạn muốn đặt điểm ngắt. 
+Vì chỉ có 4 thanh ghi này, nên bạn chỉ có thể đặt tối đa 4 Hard Breakpoints cùng một lúc.
+
+DR4 & DR5: Bị bỏ trống (dành cho mục đích dự phòng của Intel).
+
+DR6 (Status Register): Cho biết breakpoint nào vừa bị kích hoạt (giúp Debugger biết được CPU dừng lại do DR0 hay DR1...).
+
+DR7 (Control Register): Đây là "bảng điều khiển". Nó quy định:
+
+Bật/Tắt các breakpoint ở DR0-DR3.
+
+Loại điều kiện ngắt: Ngắt khi CPU thực thi lệnh, khi ghi vào bộ nhớ, hoặc khi đọc/ghi dữ liệu.
+
+Độ dài vùng nhớ: Giám sát 1 byte, 2 bytes, hoặc 4 bytes tại địa chỉ đó.
