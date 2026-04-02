@@ -9,6 +9,8 @@ HANDLE    = c_void_p
 PVOID     = c_void_p
 LPVOID    = c_void_p
 SIZE_T    = c_size_t
+UINT_PTR  = c_uint64
+LONG_PTR  = c_int64
 
 # --- Các hằng số điều khiển ---
 PROCESS_ALL_ACCESS = 0x001F0FFF
@@ -32,6 +34,8 @@ EXCEPTION_ACCESS_VIOLATION = 0xC0000005
 EXCEPTION_BREAKPOINT       = 0x80000003
 EXCEPTION_GUARD_PAGE       = 0x80000001
 EXCEPTION_SINGLE_STEP      = 0x80000004
+DBG_CONTINUE                = 0x00010002
+DBG_EXCEPTION_NOT_HANDLED   = 0x80010001
 
 # Context Flags cho x64
 CONTEXT_AMD64 = 0x00100000
@@ -88,4 +92,59 @@ class THREADENTRY32(Structure):
         ("tpBasePri",          DWORD),
         ("tpDeltaPri",         DWORD),
         ("dwFlags",            DWORD),
+    ]
+
+class EXCEPTION_RECORD(Structure):
+    pass
+
+EXCEPTION_RECORD._fields_ = [
+    ("ExceptionCode",        DWORD),
+    ("ExceptionFlags",       DWORD),
+    ("ExceptionRecord",      POINTER(EXCEPTION_RECORD)),
+    ("ExceptionAddress",     PVOID),
+    ("NumberParameters",     DWORD),
+    ("ExceptionInformation", UINT_PTR * 15),
+]
+
+class EXCEPTION_DEBUG_INFO(Structure):
+    _fields_ = [
+        ("ExceptionRecord", EXCEPTION_RECORD),
+        ("dwFirstChance",   DWORD),
+    ]
+
+class CREATE_THREAD_DEBUG_INFO(Structure):
+    _fields_ = [
+        ("hThread",           HANDLE),
+        ("lpThreadLocalBase", LPVOID),
+        ("lpStartAddress",    LPVOID),
+    ]
+
+class CREATE_PROCESS_DEBUG_INFO(Structure):
+    _fields_ = [
+        ("hFile",                 HANDLE),
+        ("hProcess",              HANDLE),
+        ("hThread",               HANDLE),
+        ("lpBaseOfImage",         LPVOID),
+        ("dwDebugInfoFileOffset", DWORD),
+        ("nDebugInfoSize",        DWORD),
+        ("lpThreadLocalBase",     LPVOID),
+        ("lpStartAddress",        LPVOID),
+        ("lpImageName",           LPVOID),
+        ("fUnicode",              WORD),
+    ]
+
+# Cấu trúc Union quan trọng nhất
+class DEBUG_EVENT_UNION(Union):
+    _fields_ = [
+        ("Exception",         EXCEPTION_DEBUG_INFO),
+        ("CreateThread",      CREATE_THREAD_DEBUG_INFO),
+        ("CreateProcess",     CREATE_PROCESS_DEBUG_INFO),
+    ]
+
+class DEBUG_EVENT(Structure):
+    _fields_ = [
+        ("dwDebugEventCode", DWORD),
+        ("dwProcessId",      DWORD),
+        ("dwThreadId",       DWORD),
+        ("u",                DEBUG_EVENT_UNION),
     ]

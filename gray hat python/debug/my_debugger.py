@@ -45,27 +45,63 @@ class debugger():
     def get_debug_event(self):
         debug_event = DEBUG_EVENT()
         continue_status = DBG_CONTINUE
-        
-        # Đợi vô hạn cho đến khi có sự kiện (như Breakpoint, Exception...)
-        if kernel32.WaitForDebugEvent(byref(debug_event), INFINITE):
-            # Hiện tại chưa xử lý gì, chỉ dừng lại để bạn quan sát
-            # input("Press Enter to continue the debuggee...")
-            print(f"[*] Event Code: {debug_event.dwDebugEventCode} từ Thread ID: {debug_event.dwThreadId}")
 
-            # Nếu muốn biết chi tiết hơn về loại sự kiện:
+        if kernel32.WaitForDebugEvent(byref(debug_event), INFINITE):
+            self.h_thread = self.open_thread(debug_event.dwThreadId)
+            self.context = self.get_thread_context(debug_event.dwThreadId)
+
+            print(f"[*] Event Code: {debug_event.dwDebugEventCode} Thread ID: {debug_event.dwThreadId}")
+
+            # Gọi các handler tương ứng
             if debug_event.dwDebugEventCode == EXCEPTION_DEBUG_EVENT:
-                exception_code = debug_event.u.Exception.ExceptionRecord.ExceptionCode
-                print(f"[!] EXCEPTION xảy ra! Mã lỗi: {hex(exception_code)}")
-            
-            # Sau khi nhấn Enter, cho phép chương trình chạy tiếp
+                self.exception_handler(debug_event)
+            elif debug_event.dwDebugEventCode == CREATE_THREAD_DEBUG_EVENT:
+                self.create_thread_handler(debug_event)
+            elif debug_event.dwDebugEventCode == CREATE_PROCESS_DEBUG_EVENT:
+                self.create_process_handler(debug_event)
+
             kernel32.ContinueDebugEvent(
                 debug_event.dwProcessId,
                 debug_event.dwThreadId,
                 continue_status
             )
+    
+    # --- Các hàm Handler cụ thể ---
+    def exception_handler(self, debug_event):
+        exception_record = debug_event.u.Exception.ExceptionRecord
+        ex_code = exception_record.ExceptionCode
+        ex_addr = exception_record.ExceptionAddress
+
+        print(f"\n[!!] Exception caught!")
+        print(f"  [+] Code: {hex(ex_code)}")
+        print(f"  [+] Address: 0x{ex_addr:016x}")
+
+        if ex_code == EXCEPTION_ACCESS_VIOLATION:
+            print("  [!] Access Violation! (Lỗi truy cập vùng nhớ cấm)")
+        elif ex_code == EXCEPTION_BREAKPOINT:
+            print("  [!] Breakpoint hit!")
+        elif ex_code == EXCEPTION_SINGLE_STEP:
+            print("  [!] Single step (Bẫy phần cứng)")
+
+        context = self.get_thread_context(debug_event.dwThreadId)
+        if context:
+            print(f"  [+] RIP: 0x{context.Rip:016x}") # RIP (instruction pointer) là con trỏ lệnh, rất quan trọng để biết luồng đang thực thi ở đâu
+            print(f"  [+] RAX: 0x{context.Rax:016x}") # RAX (accumulator) thường được dùng để trả về giá trị của hàm, nên biết RAX có thể giúp ta hiểu được kết quả của các cuộc gọi hàm gần đây
+            print(f"  [+] RSP: 0x{context.Rsp:016x}") # RSP (stack pointer) là con trỏ ngăn xếp, giúp ta biết được vị trí ngăn xếp hiện tại của luồng
+            print(f"  [+] RBP: 0x{context.Rbp:016x}") # RBP (base pointer) thường được dùng để trỏ tới khung Stack hiện tại, giúp ta hiểu được cấu trúc Stack và các biến cục bộ
             
-            # Tạm thời thoát vòng lặp sau 1 sự kiện để thử nghiệm
-            # self.debugger_active = False
+            # Đọc thử code tại vị trí lỗi
+            opcode = self.read_process_memory(context.Rip, 5)
+            if opcode:
+                hex_code = "".join(f"{b:02x} " for b in opcode)
+                print(f"  [->] Opcode: {hex_code}")
+
+    def create_thread_handler(self, debug_event):
+        print(f"[*] New thread created with ID: {debug_event.dwThreadId}")
+
+    def create_process_handler(self, debug_event):
+        lp_base = debug_event.u.CreateProcess.lpBaseOfImage
+        print(f"[*] Process created. Base Address: 0x{lp_base:016x}")
 
     def detach(self):
         if kernel32.DebugActiveProcessStop(self.pid):
@@ -102,17 +138,27 @@ class debugger():
         else:
             return False
 
-    def get_thread_context (self, thread_id):
-        context = CONTEXT()
+    def get_thread_context(self, thread_id):
+        # 1. Tạo một vùng đệm lớn hơn kích thước CONTEXT để có chỗ dịch chuyển
+        context_size = sizeof(CONTEXT)
+        buffer = create_string_buffer(context_size + 15)
+        
+        # 2. Tìm địa chỉ bắt đầu chia hết cho 16 (Memory Alignment)
+        address = addressof(buffer)
+        aligned_address = (address + 15) & ~0xF
+        
+        # 3. Ép kiểu vùng nhớ đã căn lề về cấu trúc CONTEXT
+        context = CONTEXT.from_address(aligned_address)
         context.ContextFlags = CONTEXT_FULL | CONTEXT_DEBUG_REGISTERS
-        # Obtain a handle to the thread
+
         h_thread = self.open_thread(thread_id)
-        if kernel32.GetThreadContext(h_thread, byref(context)):
-            kernel32.CloseHandle(h_thread)
-            return context
-        else:
-            print(f"[!] GetThreadContext failed. Error: {kernel32.GetLastError()}")
-            kernel32.CloseHandle(h_thread)
+        if h_thread:
+            if kernel32.GetThreadContext(h_thread, byref(context)):
+                kernel32.CloseHandle(h_thread)
+                return context
+            else:
+                print(f"[!] GetThreadContext failed. Error: {kernel32.GetLastError()}")
+                kernel32.CloseHandle(h_thread)
         return False
     
     def get_debug_privileges(self):
